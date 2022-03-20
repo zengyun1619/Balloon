@@ -17,6 +17,7 @@ public class Test {
                 , 0.2, 90, 270);
 
 
+
         StdDraw.show();
         for (double t = 0.0; true; t += 0.02) {
             double x = Math.sin(t);

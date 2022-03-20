@@ -2,6 +2,7 @@ package Core;
 
 import Animation.Animation;
 import GameElement.*;
+import edu.princeton.cs.introcs.StdDraw;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,42 +22,52 @@ public class Engine {
     private int boosterStartTime;
     private int boosterDuration;
     private boolean isMouseDown;
+    private double boosterProb;
+    private boolean boosterStatus;
 
-    private List<Balloon> balloons = new ArrayList<>();
-    private List<GameElement.Coordinate> balloonLocations = new ArrayList<>();
+    private int gameLevel;
+    private static final int[] gamePassRequirement = new int[]{100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000};
 
-    private boolean mouseClicked = false;
+    private List<Balloon> balloons;
+    private List<GameElement.Coordinate> balloonLocations;
 
     private Animation animationImplementor;
 
     public Engine(){
         animationImplementor = new Animation();
+        gameLevel = 0;
     }
 
     public void startGame() {
         configNewGame();
         animationImplementor.gameDisplayInitialize();
+        animationImplementor.setGameLevel(gameLevel);
         playGame();
     }
 
     private void configNewGame() {
-        seed = 50;
+        seed = gameLevel;
         rd = new Random(seed);
         points = 0;
         gameIntervalTime = 15;
         clock = 0;
-        balloonBaselineSpeed = 0.5;
-        balloonCreationSpeed = 0.3;
-        gameEndingTime = 5000;
+        balloonBaselineSpeed = 0.4 + 0.01 * gameLevel;
+        balloonCreationSpeed = 0.3 + 0.01 * gameLevel;
+        gameEndingTime = 3000 + 500 * gameLevel;
         balloonBaselinePointsFactor = 1;
         boosterStartTime = 0;
-        boosterDuration = 500;
+        boosterDuration = 500 + 50 * gameLevel;
+        boosterProb = 0.025 + 0.005 * gameLevel;
         isMouseDown = false;
+        boosterStatus = false;
+        balloons = new ArrayList<>();
+        balloonLocations = new ArrayList<>();
     }
 
     private void playGame() {
         while (true) {
-            animationImplementor.gameDisplay(gameEndingTime - clock, points, balloons, balloonLocations, gameIntervalTime);
+            animationImplementor.gameDisplay(gameEndingTime - clock, points,
+                    balloons, balloonLocations, gameIntervalTime);
             GameElement.Coordinate mousePosition = animationImplementor.checkMouse();
             if (mousePosition != null && !isMouseDown) {
                 isMouseDown = true;
@@ -72,15 +83,24 @@ public class Engine {
             if (boosterStartTime > 0 && clock - boosterStartTime > boosterDuration) {
                 balloonDeBoost();
             }
-            if (clock >= gameEndingTime) {
+            if (clock >= gameEndingTime || points > gamePassRequirement[gameLevel]) {
                 endGame();
             }
         }
     }
 
     private void endGame() {
-        animationImplementor.gameEndDisplay(points);
-        System.exit(0);
+        boolean gamePassStatus = points > gamePassRequirement[gameLevel];
+        animationImplementor.gameEndDisplay(points, gamePassStatus);
+        while (!StdDraw.isKeyPressed(10)) {
+            StdDraw.pause(1);
+        }
+        if (gamePassStatus && gameLevel < 10) {
+            gameLevel += 1;
+            startGame();
+        } else {
+            System.exit(0);
+        }
     }
 
     private void createBalloon() {
@@ -92,7 +112,7 @@ public class Engine {
                 balloons.add(BalloonSet.balloon5);
             } else if (balloonIndex <= 0.85) {
                 balloons.add(BalloonSet.balloon7);
-            } else if (balloonIndex <= 0.975 || boosterStartTime > 0) {
+            } else if (balloonIndex <= 1 - boosterProb || boosterStartTime > 0) {
                 balloons.add(BalloonSet.balloon9);
             } else {
                 balloons.add(BalloonSet.balloonDouble);
@@ -116,7 +136,7 @@ public class Engine {
         for (int i = 0; i < balloons.size(); i++) {
             if (hitBalloon(mousePosition, balloons.get(i), balloonLocations.get(i))) {
                 points += balloons.get(i).getPoint() * balloonBaselinePointsFactor;
-                if (balloons.get(i).getGameControlParameter() == 1) {
+                if (balloons.get(i).getGameControlParameter() == 1 && !boosterStatus) {
                     balloonBoost();
                 }
                 explodeBalloon(i);
@@ -129,6 +149,7 @@ public class Engine {
         balloonCreationSpeed *= 2.0;
         balloonBaselinePointsFactor = 2;
         boosterStartTime = clock;
+        boosterStatus = true;
     }
 
     private void balloonDeBoost() {
@@ -136,6 +157,7 @@ public class Engine {
         balloonCreationSpeed /= 2.0;
         balloonBaselinePointsFactor = 1;
         boosterStartTime = 0;
+        boosterStatus = false;
     }
 
     private boolean hitBalloon(GameElement.Coordinate mousePosition, Balloon balloon, Coordinate balloonLocation) {
@@ -162,6 +184,7 @@ public class Engine {
     }
 
     private void deleteBalloon(int balloonIndex) {
+        rd.nextDouble(balloonIndex + 1); // Add some randomness in the game.
         balloons.remove(balloonIndex);
         balloonLocations.remove(balloonIndex);
     }

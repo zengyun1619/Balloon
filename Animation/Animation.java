@@ -18,8 +18,14 @@ public class Animation extends JComponent {
     private static final double xIndent = 5.0;
     private static final double yIndent = 5.0;
 
+    private int gameLevel;
+
     public Animation() {
 
+    }
+
+    public void setGameLevel(int gameLevel) {
+        this.gameLevel = gameLevel;
     }
 
     public double getXScale() {
@@ -45,8 +51,8 @@ public class Animation extends JComponent {
         StdDraw.setPenColor(Color.BLACK);
         Font font = new Font("ITALIC", Font.BOLD, 25);
         StdDraw.setFont(font);
-        StdDraw.text(xScale  - 15, yScale - 5.0, "Points: ");
-        StdDraw.text(xScale  - 5, yScale - 5.0, Integer.toString(points));
+        StdDraw.text(xScale  - 20, yScale - 5.0, "Points: ");
+        StdDraw.text(xScale  - 10, yScale - 5.0, Integer.toString(points));
     }
 
     public void clockDisplay(int timeRemaining) {
@@ -57,15 +63,18 @@ public class Animation extends JComponent {
         StdDraw.text(20, yScale - 5.0, Integer.toString(timeRemaining));
     }
 
-    public void backgroundDisplay() {
+    public void backgroundDisplay(int gameLevel) {
         StdDraw.setPenColor(Color.WHITE);
         StdDraw.filledRectangle(xScale / 2, yScale / 2, xScale / 2, yScale / 2);
+
+        StdDraw.picture(xScale / 2, yScale / 2, "Animation/background" + Integer.toString(gameLevel) + ".jpg", xScale, yScale);
+
     }
 
     public void gameDisplay(int timeRemaining, int points,
                             List<Balloon> balloons, List<GameElement.Coordinate> balloonLocations,
                             int gameIntervalTime) {
-        backgroundDisplay();
+        backgroundDisplay(gameLevel);
         pointsDisplay(points);
         clockDisplay(timeRemaining);
 
@@ -85,7 +94,12 @@ public class Animation extends JComponent {
         StdDraw.arc(balloonLocation.getX(), balloonLocation.getY() - balloon.getSize() * balloon.getHeightWidthRatio() - balloon.getSize() * 3.0 / 2.0
                 , balloon.getSize() / 2.0, -90, 90);
 
-        StdDraw.setPenColor(balloon.getColor());
+        if (gameLevel < 10) {
+            StdDraw.setPenColor(balloon.getColor());
+        } else {
+            StdDraw.setPenColor(new Color(0,153,0));
+        }
+
         StdDraw.filledEllipse(balloonLocation.getX(), balloonLocation.getY(), balloon.getSize(), balloon.getSize() * balloon.getHeightWidthRatio());
 
         StdDraw.setPenColor(Color.BLACK);
@@ -114,26 +128,38 @@ public class Animation extends JComponent {
 
     }
 
-    public void gameEndDisplay(int points) {
+    public void gameEndDisplay(int points, boolean gamePassStatus) {
         StdDraw.clear();
+
+        if (gamePassStatus) {
+            StdDraw.picture(xScale / 2, yScale * 4 / 5, "Animation/gamePassTrue.jpg", 30, 30);
+        } else {
+            StdDraw.picture(xScale / 2, yScale * 4 / 5, "Animation/gamePassFalse.jpg", 30, 30);
+        }
+
         StdDraw.setPenColor(Color.BLACK);
         Font font = new Font("ITALIC", Font.BOLD, 45);
         StdDraw.setFont(font);
-        StdDraw.text(xScale  / 2, yScale * 3.5 / 5, "Game End.");
+        if (gamePassStatus) {
+            StdDraw.text(xScale  / 2, yScale * 3 / 5, "Level Passed.");
+        } else {
+            StdDraw.text(xScale  / 2, yScale * 3 / 5, "Game Over.");
+        }
 
         font = new Font("ITALIC", Font.BOLD, 55);
         StdDraw.setFont(font);
-        StdDraw.text(xScale  / 2, yScale / 2, "Your Points: ");
-        StdDraw.text(xScale  / 2 + 30 + 4 * Integer.toString(points).length(), yScale /2 , Integer.toString(points));
+        StdDraw.text(xScale  / 2, yScale * 2 / 5, "Your Points: ");
+        StdDraw.text(xScale  / 2 + 30 + 4 * Integer.toString(points).length(), yScale * 2 / 5 , Integer.toString(points));
 
         font = new Font("ITALIC", Font.BOLD, 35);
         StdDraw.setFont(font);
-        StdDraw.text(xScale  / 2, yScale / 7, "Press Enter to exit.");
-        StdDraw.show();
-
-        while (!StdDraw.isKeyPressed(10)) {
-            StdDraw.pause(1);
+        if (gamePassStatus) {
+            StdDraw.text(xScale  / 2, yScale / 7, "Press Enter for the next level.");
+        } else {
+            StdDraw.text(xScale  / 2, yScale / 7, "Press Enter to exit.");
         }
+
+        StdDraw.show();
     }
 
 
